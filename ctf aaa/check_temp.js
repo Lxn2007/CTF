@@ -1,0 +1,1 @@
+const fs = require('fs'); const s = fs.readFileSync('F:/ctf aaa/ctf-decoder.html', 'utf8'); const m = s.match(/<script>([\s\S]*?)<\/script>/); if (m) { const c = m[1]; console.log('Script length:', c.length); try { new Function(c); console.log('OK: script parses successfully'); } catch (e) { console.log('ERROR: ' + e.message); } } else { console.log('No script tag found!'); }

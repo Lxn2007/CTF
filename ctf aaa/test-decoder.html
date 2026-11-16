@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base64 测试</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 50px; background: #f5f5f5; }
+.test-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+input { width: 400px; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background: #1d4ed8; }
+.result { margin: 10px 0; padding: 10px; background: #f0f9ff; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="test-box">
+<h2>Base64 解码测试</h2>
+<input type="text" id="testInput" placeholder="输入 Base64 字符串..." value="ZmxhZ3tiYXNlNjRfMXNfM2VzeV90MF9kM2NvZGV9">
+<button onclick="testDecode()">解码测试</button>
+<div id="testResult" class="result"></div>
+</div>
+
+<script>
+function testDecode() {
+  var input = document.getElementById('testInput').value;
+  var result = document.getElementById('testResult');
+  
+  try {
+    var decoded = fromB64(input);
+    result.innerHTML = '<h3>结果:</h3><p>' + escapeHtml(decoded) + '</p>';
+    result.style.display = 'block';
+  } catch(e) {
+    result.innerHTML = '<h3>错误:</h3><p style="color: red;">' + escapeHtml(e.message) + '</p>';
+    result.style.display = 'block';
+  }
+}
+
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function fromB64(t) {
+  try {
+    var s = t.replace(/\s/g, '');
+    if (s.includes('-') || s.includes('_')) {
+      s = s.replace(/-/g, '+').replace(/_/g, '/');
+    }
+    var pad = s.length % 4;
+    if (pad) s += '='.repeat(4 - pad);
+    return decodeURIComponent(escape(atob(s)));
+  } catch(e) { throw new Error('Base64解码失败: ' + e.message); }
+}
+</script>
+</body>
+</html>

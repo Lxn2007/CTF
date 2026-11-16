@@ -1,0 +1,5 @@
+var PAYLOADS = {
+  xss: {
+    name: 'XSS',
+    subs: [
+      {name: 'alert 弹窗', tag: '通用测试', type: 'reflect', val: '<script>alert(1

